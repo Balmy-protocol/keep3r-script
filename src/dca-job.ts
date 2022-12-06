@@ -38,7 +38,7 @@ const bundleSigner = new Wallet(getEnvVariable('BUNDLE_SIGNER_PRIVATE_KEY'), pro
 // Instantiates the contract
 const dcaJob = getMainnetSdk(txSigner).dcaJob;
 
-// Creates a flag to signar if there is already a job in progress
+// Creates a flag to signal if there is already a job in progress
 let jobWorkInProgress = false;
 
 /**
