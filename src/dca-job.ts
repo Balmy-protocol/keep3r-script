@@ -1,5 +1,5 @@
-import { getMainnetSdk } from '@dethcrypto/eth-sdk-client';
-import type { TransactionRequest } from '@ethersproject/abstract-provider';
+import {getMainnetSdk} from '@dethcrypto/eth-sdk-client';
+import type {TransactionRequest} from '@ethersproject/abstract-provider';
 import {
   getMainnetGasType2Parameters,
   sendAndRetryUntilNotWorkable,
@@ -8,19 +8,11 @@ import {
   Flashbots,
 } from '@keep3r-network/keeper-scripting-utils';
 import dotenv from 'dotenv';
-import type { Overrides } from 'ethers';
-import { providers, Wallet } from 'ethers';
-import { request } from 'undici';
-import {
-  API_URL,
-  BURST_SIZE,
-  CHAIN_ID,
-  FLASHBOTS_RPC,
-  FUTURE_BLOCKS,
-  INTERVAL,
-  PRIORITY_FEE,
-} from './utils/contants';
-import { getEnvVariable } from './utils/misc';
+import type {Overrides} from 'ethers';
+import {providers, Wallet} from 'ethers';
+import {request} from 'undici';
+import {API_URL, BURST_SIZE, CHAIN_ID, FLASHBOTS_RPC, FUTURE_BLOCKS, INTERVAL, PRIORITY_FEE} from './utils/contants';
+import {getEnvVariable} from './utils/misc';
 
 dotenv.config();
 
@@ -47,7 +39,7 @@ const bundleSigner = new Wallet(getEnvVariable('BUNDLE_SIGNER_PRIVATE_KEY'), pro
 const dcaJob = getMainnetSdk(txSigner).dcaJob;
 
 // Creates a flag to signar if there is already a job in progress
-let jobWorkInProgress: boolean = false
+let jobWorkInProgress = false;
 
 /**
  * @notice Checks every few minutes if there is something to be worked. If there is, then it tries to execute it
@@ -59,48 +51,48 @@ async function run() {
   setInterval(async () => {
     if (jobWorkInProgress) {
       console.debug('Work already in progress for job');
-      return
+      return;
     }
-    jobWorkInProgress = true
+
+    jobWorkInProgress = true;
     try {
-      await tryToWorkJob(flashbots)
+      await tryToWorkJob(flashbots);
     } finally {
-      jobWorkInProgress = false
+      jobWorkInProgress = false;
     }
-  }, INTERVAL)
+  }, INTERVAL);
 }
 
 /**
  * @notice Attempts to work the job.
  */
 async function tryToWorkJob(flashbots: Flashbots) {
-
   // Call the API to get the needed swaps
-  // Note: this request is very time expensive because it will try to group as many pair swaps as possible. Each attempt 
+  // Note: this request is very time expensive because it will try to group as many pair swaps as possible. Each attempt
   //       requires asking DEXes for quotes, so it can take a while (up to ~30 seconds sometimes)
-  const { statusCode, body } = await request(API_URL);
+  const {statusCode, body} = await request(API_URL);
   if (statusCode !== 200) {
-    console.warn('Request to Mean API failed')
-    return
+    console.warn('Request to Mean API failed');
+    return;
   }
 
-  const result = await body.json()
+  const result = await body.json();
   if (!result.swapToExecute) {
-    console.debug('There is nothing to execute')
-    return
+    console.debug('There is nothing to execute');
+    return;
   }
 
-  const { data, v, r, s } = result.params
+  const {data, v, r, s} = result.params;
 
   // Prepare check to see if the job is workable
   const isWorkableCheck = async () => {
     try {
-      await dcaJob.connect(txSigner).callStatic.work(data, v, r, s)
-      return true
+      await dcaJob.connect(txSigner).callStatic.work(data, v, r, s);
+      return true;
     } catch {
-      return false
+      return false;
     }
-  }
+  };
 
   // Calls job contract to check if it's actually workable
   const isWorkable = await isWorkableCheck();
@@ -114,10 +106,7 @@ async function tryToWorkJob(flashbots: Flashbots) {
   console.debug('Job is workable');
   try {
     // Get the signer's (keeper) current nonce and the current block number
-    const [currentNonce, currentBlock] = await Promise.all([
-      provider.getTransactionCount(txSigner.address),
-      provider.getBlock('latest')
-    ])
+    const [currentNonce, currentBlock] = await Promise.all([provider.getTransactionCount(txSigner.address), provider.getBlock('latest')]);
 
     /*
         We are going to send this through Flashbots, which means we will be sending multiple bundles to different
@@ -133,7 +122,7 @@ async function tryToWorkJob(flashbots: Flashbots) {
     // Fetch the priorityFeeInGwei and maxFeePerGas parameters from the getMainnetGasType2Parameters function
     // NOTE: this just returns our priorityFee in GWEI, it doesn't calculate it, so if we pass a priority fee of 10 wei
     //       this will return a priority fee of 10 GWEI. We need to pass it so that it properly calculated the maxFeePerGas
-    const { priorityFeeInGwei, maxFeePerGas } = getMainnetGasType2Parameters({
+    const {priorityFeeInGwei, maxFeePerGas} = getMainnetGasType2Parameters({
       block: currentBlock,
       blocksAhead,
       priorityFeeInWei: PRIORITY_FEE,
