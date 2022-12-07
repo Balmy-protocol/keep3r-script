@@ -6,12 +6,13 @@ import {
   populateTransactions,
   createBundlesWithSameTxs,
   Flashbots,
+  BlockListener,
 } from '@keep3r-network/keeper-scripting-utils';
 import dotenv from 'dotenv';
 import type {Overrides} from 'ethers';
 import {providers, Wallet} from 'ethers';
 import {request} from 'undici';
-import {API_URL, BURST_SIZE, CHAIN_ID, FLASHBOTS_RPC, FUTURE_BLOCKS, INTERVAL, PRIORITY_FEE} from './utils/contants';
+import {API_URL, BURST_SIZE, CHAIN_ID, FLASHBOTS_RPC, FUTURE_BLOCKS, PRIORITY_FEE} from './utils/contants';
 import {getEnvVariable} from './utils/misc';
 
 dotenv.config();
@@ -21,7 +22,7 @@ dotenv.config();
   1. Check if there is something to swap
   2. If there is, then it will find the best quotes to execute said swaps
   3. Return everything that is needed for swap executions
-  
+
   So the keeper will only have to:
   1. Check every few minutes if there is something to swap by calling the API
   2. If there is, then execute it
@@ -31,9 +32,11 @@ dotenv.config();
 /*============================================================== */
 
 // environment variables usage
-const provider = new providers.JsonRpcProvider(getEnvVariable('RPC_HTTPS_URI'));
+const provider = new providers.WebSocketProvider(getEnvVariable('RPC_WSS_URI'));
 const txSigner = new Wallet(getEnvVariable('TX_SIGNER_PRIVATE_KEY'), provider);
 const bundleSigner = new Wallet(getEnvVariable('BUNDLE_SIGNER_PRIVATE_KEY'), provider);
+
+const blockListener = new BlockListener(provider);
 
 // Instantiates the contract
 const dcaJob = getMainnetSdk(txSigner).dcaJob;
@@ -45,10 +48,9 @@ let jobWorkInProgress = false;
  * @notice Checks every few minutes if there is something to be worked. If there is, then it tries to execute it
  */
 async function run() {
-  console.log('START runUpkeepJob()');
   const flashbots = await Flashbots.init(txSigner, bundleSigner, provider, [FLASHBOTS_RPC], true, CHAIN_ID);
 
-  setInterval(async () => {
+  blockListener.stream(async () => {
     if (jobWorkInProgress) {
       console.debug('Work already in progress for job');
       return;
@@ -60,7 +62,7 @@ async function run() {
     } finally {
       jobWorkInProgress = false;
     }
-  }, INTERVAL);
+  });
 }
 
 /**
@@ -85,13 +87,18 @@ async function tryToWorkJob(flashbots: Flashbots) {
   const {data, v, r, s} = result.params;
 
   // Prepare check to see if the job is workable
-  const isWorkableCheck = async () => {
+  const isWorkableCheck = async (): Promise<boolean> => {
     try {
       await dcaJob.connect(txSigner).callStatic.work(data, v, r, s);
       return true;
     } catch {
       return false;
     }
+  };
+
+  // Prepare check to see if the job is workable
+  const estimateGas = async (): Promise<number> => {
+    return (await dcaJob.connect(txSigner).estimateGas.work(data, v, r, s)).toNumber();
   };
 
   // Calls job contract to check if it's actually workable
@@ -102,6 +109,8 @@ async function tryToWorkJob(flashbots: Flashbots) {
     console.log('Job is not workable');
     return;
   }
+
+  const gasUsed = await estimateGas();
 
   console.debug('Job is workable');
   try {
@@ -130,7 +139,7 @@ async function tryToWorkJob(flashbots: Flashbots) {
 
     // We declare what options we would like our transaction to have
     const options: Overrides = {
-      gasLimit: 20_000_000,
+      gasLimit: Math.floor(gasUsed * 1.2),
       nonce: currentNonce,
       maxFeePerGas,
       maxPriorityFeePerGas: priorityFeeInGwei,
@@ -162,7 +171,7 @@ async function tryToWorkJob(flashbots: Flashbots) {
     });
 
     /*
-      We send our batch of bundles and recreate new ones until we work it stops being workable      
+      We send our batch of bundles and recreate new ones until we work it stops being workable
     */
     const result = await sendAndRetryUntilNotWorkable({
       txs,

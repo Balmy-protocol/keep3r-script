@@ -15,9 +15,9 @@
   "private": true,
   "scripts": {
     "postinstall": "eth-sdk",
-    "start": "ts-node src/upkeep-job.ts",
+    "start": "ts-node src/dca-job.ts",
     "build": "eth-sdk && tsc",
-    "prod": "node dist/src/upkeep-job.js",
+    "prod": "node dist/dca-job.js",
     "lint": "xo",
     "lint:fix": "xo --fix"
   },
