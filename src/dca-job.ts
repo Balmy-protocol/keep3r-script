@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 import type {Contract} from 'ethers';
 import {providers, Wallet} from 'ethers';
 import {request} from 'undici';
-import {API_URL, CHAIN_ID, FLASHBOTS_RPCS, PRIORITY_FEE} from './utils/contants';
+import {API_URL, CHAIN_ID, FLASHBOTS_RPCS, PRIORITY_FEE, GAS_LIMIT} from './utils/contants';
 
 dotenv.config();
 
@@ -32,7 +32,7 @@ dotenv.config();
   const dcaJob = getMainnetSdk(txSigner).dcaJob;
 
   // Instantiates the broadcastor
-  const broadcastor = new PrivateBroadcastor(FLASHBOTS_RPCS, PRIORITY_FEE, 10e6, true, CHAIN_ID);
+  const broadcastor = new PrivateBroadcastor(FLASHBOTS_RPCS, PRIORITY_FEE, GAS_LIMIT, true, CHAIN_ID);
 
   // Run the script
   await run(dcaJob, provider, broadcastor);
