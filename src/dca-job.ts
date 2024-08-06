@@ -1,13 +1,10 @@
 import {getMainnetSdk} from '@dethcrypto/eth-sdk-client';
 import type {BroadcastorProps} from '@keep3r-network/keeper-scripting-utils';
 import {PrivateBroadcastor, getEnvVariable, BlockListener} from '@keep3r-network/keeper-scripting-utils';
-import dotenv from 'dotenv';
 import type {Contract} from 'ethers';
 import {providers, Wallet} from 'ethers';
 import {request} from 'undici';
 import {API_URL, CHAIN_ID, RELAYER_RPCS, PRIORITY_FEE, GAS_LIMIT} from './utils/contants';
-
-dotenv.config();
 
 /*
   This job is meant to execute DCA swaps for Mean Finance. There is already an API that will:
@@ -23,6 +20,9 @@ dotenv.config();
                           SETUP
 /*============================================================== */
 
+// Creates a flag to signal if there is already a job in progress
+let jobWorkInProgress = false;
+
 (async () => {
   // Environment variables usage
   const provider = new providers.JsonRpcProvider(getEnvVariable('RPC_HTTP_MAINNET_URI'));
@@ -35,16 +35,6 @@ dotenv.config();
   const broadcastor = new PrivateBroadcastor(RELAYER_RPCS, PRIORITY_FEE, GAS_LIMIT, true, CHAIN_ID);
 
   // Run the script
-  await run(dcaJob, provider, broadcastor);
-})();
-
-// Creates a flag to signal if there is already a job in progress
-let jobWorkInProgress = false;
-
-/**
- * @notice Checks every few minutes if there is something to be worked. If there is, then it tries to execute it
- */
-async function run(dcaJob: Contract, provider: providers.JsonRpcProvider, broadcastor: PrivateBroadcastor) {
   const blockListener = new BlockListener(provider);
 
   blockListener.stream(async (block) => {
@@ -60,7 +50,7 @@ async function run(dcaJob: Contract, provider: providers.JsonRpcProvider, broadc
       jobWorkInProgress = false;
     }
   });
-}
+})();
 
 /**
  * @notice Attempts to work the job.
@@ -87,35 +77,6 @@ async function tryToWorkJob(
   }
 
   const {data, v, r, s} = result.params;
-
-  // Prepare check to see if the job is workable
-  const isWorkableCheck = async (): Promise<boolean> => {
-    try {
-      await dcaJob.callStatic.work(data, v, r, s);
-      return true;
-    } catch {
-      return false;
-    }
-  };
-
-  // Prepare check to see if the job is workable
-  const estimateGas = async (): Promise<number> => {
-    const gasEstimated = await dcaJob.estimateGas.work(data, v, r, s);
-    return gasEstimated.toNumber();
-  };
-
-  // Calls job contract to check if it's actually workable
-  const isWorkable = await isWorkableCheck();
-
-  // If the job is not workable for any reason, the execution of the function is stopped
-  if (!isWorkable) {
-    console.log('Job is not workable');
-    return;
-  }
-
-  const gasUsed = await estimateGas();
-
-  console.debug('Job is workable');
 
   await broadcastMethod({jobContract: dcaJob, workMethod, workArguments: [data, v, r, s], block});
 }
