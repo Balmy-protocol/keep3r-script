@@ -44,11 +44,7 @@ let jobWorkInProgress = false;
 /**
  * @notice Checks every few minutes if there is something to be worked. If there is, then it tries to execute it
  */
-async function run(
-  dcaJob: Contract,
-  provider: providers.JsonRpcProvider,
-  broadcastor: PrivateBroadcastor,
-) {
+async function run(dcaJob: Contract, provider: providers.JsonRpcProvider, broadcastor: PrivateBroadcastor) {
   const blockListener = new BlockListener(provider);
 
   blockListener.stream(async (block) => {
@@ -104,7 +100,8 @@ async function tryToWorkJob(
 
   // Prepare check to see if the job is workable
   const estimateGas = async (): Promise<number> => {
-    return (await dcaJob.estimateGas.work(data, v, r, s)).toNumber();
+    const gasEstimated = await dcaJob.estimateGas.work(data, v, r, s);
+    return gasEstimated.toNumber();
   };
 
   // Calls job contract to check if it's actually workable
@@ -120,5 +117,5 @@ async function tryToWorkJob(
 
   console.debug('Job is workable');
 
-  broadcastMethod({jobContract: dcaJob, workMethod, workArguments: [data, v, r, s], block});
+  await broadcastMethod({jobContract: dcaJob, workMethod, workArguments: [data, v, r, s], block});
 }
