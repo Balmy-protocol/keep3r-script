@@ -14,7 +14,7 @@ export const PRIORITY_FEE = 2.1;
 export const GAS_LIMIT = 10_000_000;
 
 // Flashbots RPCs.
-export const FLASHBOTS_RPCS = ['https://rpc.titanbuilder.xyz/', 'https://rpc.beaverbuild.org/'];
+export const RELAYER_RPCS = ['https://rpc.titanbuilder.xyz/', 'https://rpc.beaverbuild.org/'];
 
 // The API to find the best quotes
 export const API_URL = 'https://api.mean.finance/v1/dca/networks/1/keep3r';
