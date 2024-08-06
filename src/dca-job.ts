@@ -77,6 +77,7 @@ async function tryToWorkJob(
   }
 
   const {data, v, r, s} = result.params;
+  const latestBlock: providers.Block = await dcaJob.provider.getBlock('latest');
 
-  await broadcastMethod({jobContract: dcaJob, workMethod, workArguments: [data, v, r, s], block});
+  await broadcastMethod({jobContract: dcaJob, workMethod, workArguments: [data, v, r, s], block: latestBlock});
 }
