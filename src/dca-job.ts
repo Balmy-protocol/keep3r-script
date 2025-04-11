@@ -74,7 +74,7 @@ async function tryToWorkJob(flashbots: Flashbots) {
   //       requires asking DEXes for quotes, so it can take a while (up to ~30 seconds sometimes)
   const {statusCode, body} = await request(API_URL);
   if (statusCode !== 200) {
-    console.warn('Request to Mean API failed');
+    console.warn('Request to Balmy API failed');
     return;
   }
 

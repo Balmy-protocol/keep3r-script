@@ -1,13 +1,13 @@
-# Mean Finance's Keeper Scripts
+# Balmy's Keeper Scripts
 
-This repository enables keepers of the Keep3r Network to execute Mean Finance's jobs on Ethereum.
+This repository enables keepers of the Keep3r Network to execute Balmy's jobs on Ethereum.
 
 ## How to run
 
 1. Clone the repository
 
 ```
-  git clone https://github.com/Mean-Finance/keep3r-script
+  git clone https://github.com/Balmy-Protocol/keep3r-script
 ```
 
 2. Install dependencies

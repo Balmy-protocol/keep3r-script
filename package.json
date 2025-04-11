@@ -1,16 +1,17 @@
 {
-  "name": "@mean-finance/keep3r-script",
+  "name": "@balmy/keep3r-script",
   "version": "0.0.1",
-  "description": "Mean Finance's keeper script for the Keep3r Network",
+  "description": "Balmy's keeper script for the Keep3r Network",
   "keywords": [
     "keep3r",
     "job",
     "ethereum",
     "mean",
-    "finance"
+    "finance",
+    "balmy"
   ],
   "license": "MIT",
-  "author": "Mean Finance",
+  "author": "Balmy",
   "contributors": [],
   "private": true,
   "scripts": {

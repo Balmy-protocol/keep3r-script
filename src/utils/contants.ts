@@ -14,7 +14,7 @@ export const PRIORITY_FEE = 2.1;
 export const FLASHBOTS_RPC = 'https://relay.flashbots.net';
 
 // The API to find the best quotes
-export const API_URL = 'https://api.mean.finance/v1/dca/networks/1/keep3r';
+export const API_URL = 'https://api.balmy.xyz/v1/dca/networks/1/keep3r';
 
 // The time interval to check if there is something to swap
 export const INTERVAL = 5 * 60 * 1000; // Every five minutes
